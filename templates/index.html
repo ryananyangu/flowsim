@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Go Template</title>
+    <script
+      src="https://unpkg.com/htmx.org@1.9.2"
+      integrity="sha384-L6OqL9pRWyyFU3+/bjdSri+iIphTN/bvYyM37tICVyOJkWZLpP2vGn6VUEXgzg6h"
+      crossorigin="anonymous"
+    ></script>
+  </head>
+
+  <body>
+    <fieldset>
+      <legend>Screen Type:</legend>
+      {{range .screen_types}}
+      <div>
+        <input
+          type="radio"
+          id="{{.}}"
+          name="screen_type"
+          value="{{.}}"
+          hx-get="/screenview"
+          hx-trigger="click"
+          hx-target="#new_screen_formdata"
+          hx-swap="innerHTML"
+        />
+        <label for="{{.}}">{{.}}</label>
+      </div>
+      {{end}}
+    </fieldset>
+    <br />
+    <div id="new_screen_formdata"></div>
+  </body>
+</html>

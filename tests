@@ -1,0 +1,51 @@
+CREATE TYPE "direction_types" AS ENUM (
+  'INBOX',
+  'OUTBOX'
+);
+
+CREATE TABLE "menus" (
+  "id" integer PRIMARY KEY,
+  "shortcode" varchar,
+  "country_code" varchar,
+  "description" text,
+  "created_at" timestamp,
+  "updated_at" timestamp,
+  "createdby" varchar,
+  "updatedby" varchar
+);
+
+CREATE TABLE "screens" (
+  "id" integer PRIMARY KEY,
+  "menu_id" integer,
+  "name" integer,
+  "language" varchar,
+  "is_end" bool,
+  "back_enabled" bool,
+  "exit_enabled" bool,
+  "details" jsonb,
+  "created_at" timestamp,
+  "updated_at" timestamp,
+  "createdby" varchar,
+  "updatedby" varchar
+);
+
+CREATE TABLE "messages" (
+  "id" integer PRIMARY KEY,
+  "screen_id" integer,
+  "conversation_id" varchar,
+  "content" text,
+  "source" varchar,
+  "destination" varchar,
+  "direction" direction_types,
+  "status" varchar,
+  "status_description" varchar,
+  "created_at" timestamp,
+  "updated_at" timestamp,
+  "createdby" varchar,
+  "updatedby" varchar,
+  "session_data" jsonb
+);
+
+ALTER TABLE "screens" ADD FOREIGN KEY ("menu_id") REFERENCES "menus" ("id");
+
+ALTER TABLE "messages" ADD FOREIGN KEY ("screen_id") REFERENCES "screens" ("id");

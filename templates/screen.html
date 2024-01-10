@@ -1,0 +1,81 @@
+<!-- FIXME: Use reflection to handle all the lables and naming from struct -->
+<form>
+  <!-- Following are available to all screen types -->
+  <label for="screen_name">Name</label>
+  <input type="text" name="screen_name" id="screen_name" />
+  <br />
+  <label for="screen_header">Header</label>
+  <input type="text" name="screen_header" id="screen_header" />
+  <br />
+  <label for="screen_is_end">IsEnd</label>
+  <input type="radio" name="screen_is_end" id="screen_is_end" />
+  <br />
+  <label for="screen_back_enabled">BackEnabled</label>
+  <input type="radio" name="screen_back_enabled" id="screen_back_enabled" />
+  <br />
+  <label for="screen_exit_enabled">ExitEnabled</label>
+  <input type="radio" name="screen_exit_enabled" id="screen_exit_enabled" />
+  <br />
+  <div>
+    <div>
+      {{if eq .ScreenType "LS"}}
+      <form>
+        <label for="ls_value">Option</label>
+        <input type="text" name="ls_value" id="ls_value" />
+        <button
+          hx-post="/listscreen/item"
+          hx-target="#ls_options"
+          hx-trigger="click"
+          hx-swap="beforeend"
+        >
+          Add
+        </button>
+      </form>
+
+      <br />
+      <ol id="ls_options">
+        <!-- Data in here will have to be disabled or -->
+        <!-- Routes input should be targeted here with hx-swap of before end with innerHTML -->
+      </ol>
+      <br />
+      <label for="ls__next_location">NextLocation</label>
+      <input type="number" name="ls__next_location" id="ls__next_location" />
+      {{end}}
+    </div>
+    <div>
+      {{if eq .ScreenType "ES"}}
+      <label for="es__next_location">NextLocation</label>
+      <input type="number" name="es__next_location" id="es__next_location" />
+      {{end}}
+    </div>
+    <div>
+      {{if eq .ScreenType "RS"}}
+      <!-- FIXME: One input with output in  wrap this into a form for easier request triggering-->
+      <label for="rs_value">Route</label>
+      <input type="text" name="rs_value" id="rs_value" />
+      <label for="rs__next_location">NextLocation</label>
+      <input type="number" name="rs__next_location" id="rs__next_location" />
+      <label for="rs_is_end">IsEnd</label>
+      <input type="radio" name="rs_is_end" id="rs_is_end" />
+
+      <button hx-target="#rs_routes" hx-swap="beforeend" hx-trigger="click">
+        Add
+      </button>
+
+      <div id="rs_routes">
+        <!-- Data in here will have to be disabled or -->
+        <!-- Routes input should be targeted here with hx-swap of before end with innerHTML -->
+      </div>
+      {{end}}
+    </div>
+
+    <div>
+      {{if eq .ScreenType "RIS"}}
+      <label for="ris__next_location">NextLocation</label>
+      <input type="number" name="ris__next_location" id="ris__next_location" />
+      {{end}}
+    </div>
+    <!-- Specific to the screen type recorded -->
+  </div>
+  <button>Save</button>
+</form>
