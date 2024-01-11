@@ -15,4 +15,7 @@ var Routes = map[string]map[string]gin.HandlerFunc{
 	"/listscreen/item": {
 		"POST": controllers.ListScreenItem,
 	},
+	"/ussd/navigate":{
+		"POST": controllers.NavigateUSSD,
+	},
 }

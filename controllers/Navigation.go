@@ -1,11 +1,14 @@
 package controllers
 
 import (
+	"fmt"
 	"io"
 	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/nyaruka/phonenumbers"
+	"github.com/sirupsen/logrus"
 
 	"github.com/zohari-tech/flowsim/models"
 	"github.com/zohari-tech/flowsim/services"
@@ -15,13 +18,21 @@ import (
 func NavigateUSSD(ctx *gin.Context) {
 
 	dial := struct {
-		PhoneNumber string `form:"phoneNumber"`
-		SessionID   string `form:"sessionId"`
-		Content     string `form:"text"`
-		ServiceCode string `form:"serviceCode"`
+		PhoneNumber string `form:"phoneNumber" binding:"required"`
+		SessionID   string `form:"sessionId" binding:"required"`
+		Content     string `form:"text" binding:"-"`
+		ServiceCode string `form:"serviceCode" binding:"required"`
 	}{}
 
 	if err := ctx.ShouldBind(&dial); err != nil {
+		logrus.Error(err)
+		ctx.HTML(http.StatusOK, "ussd.html", gin.H{"message": "system error"})
+		return
+	}
+	parsed, err := phonenumbers.Parse(dial.PhoneNumber, "KE")
+	if err != nil {
+		logrus.Error(err)
+		ctx.HTML(http.StatusOK, "ussd.html", gin.H{"message": "system error"})
 		return
 	}
 	msg := models.Message{
@@ -32,9 +43,9 @@ func NavigateUSSD(ctx *gin.Context) {
 		Content:        dial.Content,
 	}
 
-	content := services.Navigate(&msg)
+	content := services.Navigate(&msg, fmt.Sprintf("%d", *parsed.CountryCode))
 
-	ctx.HTML(http.StatusOK, "ussd.hml", gin.H{"message": content})
+	ctx.HTML(http.StatusOK, "ussd.html", gin.H{"message": content})
 
 }
 
@@ -57,6 +68,5 @@ func DisplayScreen(ctx *gin.Context) {
 func ListScreenItem(ctx *gin.Context) {
 	jsonData, _ := io.ReadAll(ctx.Request.Body)
 	log.Println(string(jsonData))
-	// ctx.ShouldBind
 	ctx.HTML(http.StatusOK, "listscreenitem.html", gin.H{"ls_option": "test"})
 }

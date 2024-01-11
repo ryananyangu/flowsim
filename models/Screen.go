@@ -1,8 +1,12 @@
 package models
 
 import (
+	"database/sql/driver"
+	"encoding/json"
+	"errors"
 	"time"
 
+	"github.com/sirupsen/logrus"
 	"github.com/zohari-tech/flowsim/database"
 	"github.com/zohari-tech/flowsim/utils"
 )
@@ -26,7 +30,7 @@ type Menu struct {
 
 type Screen struct {
 	ID          uint             `json:"id" gorm:"column:id"`
-	MenuID      string           `json:"menu_id" gorm:"column:menu_id"`
+	MenuID      uint             `json:"menu_id" gorm:"column:menu_id"`
 	Name        string           `json:"name" gorm:"column:name"`
 	ScreenType  utils.ScreenType `json:"screen_type" gorm:"column:screen_type"`
 	Language    string           `json:"language" gorm:"column:language"`
@@ -68,24 +72,26 @@ func (msg *Message) GetLastScreen() (screen Screen, start bool) {
 	return
 }
 
-func (msg *Message) GetScreen(location int) (screen IScreen) {
+func (msg *Message) GetScreen(location int, countr_code string) (screen IScreen) {
 	menu := Menu{}
 	screens := []Screen{}
 	nextscreen := Screen{}
 
-	// FIXME: Country code
-	_ = database.Db.Table("menus").Where("code = ? AND country_code = ? AND telco = ?", msg.Destination, "254", "").First(&menu).Error
+	// FIXME: Handle these errors
+	// NOTE: no telco filter given that we cannot have same shortcode different telco different flows in the same country
+	_ = database.Db.Table("menus").Where("shortcode = ? AND country_code = ?", msg.Destination, countr_code).First(&menu).Error
 
-	_ = database.Db.Table("screens").Where("menu_id", menu.ID).Order("createdAt ASC").Find(&screens).Error
+	_ = database.Db.Table("screens").Where("menu_id", menu.ID).Order("created_at ASC").Find(&screens).Error
 
 	for _, screen_ := range screens {
 		if location == int(screen_.Location) {
 			nextscreen = screens[location]
-			return
+			break
 		}
 	}
 
 	screen = nextscreen.FormatBuild()
+	logrus.Info(screen)
 	// NOTE: This is where we set the screen to be set
 	utils.CacheInstance.Set(msg.ConversationID, screen, time.Minute)
 	return
@@ -106,13 +112,13 @@ func (scrn *Screen) FormatBuild() IScreen {
 	case utils.LIST_SCREEN:
 		return ListScreen{
 			CoreScreen:   core,
-			NextLocation: scrn.Details["NextLocation"].(uint),
+			NextLocation: uint(scrn.Details["NextLocation"].(int)) ,
 			Options:      scrn.Details["Options"].([]string),
 		}
 	case utils.RAW_INPUT_SCREEN:
 		return RawInputScreen{
 			CoreScreen:   core,
-			NextLocation: scrn.Details["NextLocation"].(uint),
+			NextLocation: uint(scrn.Details["NextLocation"].(float64)),
 		}
 	case utils.ROUTE_SCREEN:
 		return RouteScreen{
@@ -121,4 +127,18 @@ func (scrn *Screen) FormatBuild() IScreen {
 		}
 	}
 	return nil
+}
+
+// Value Marshal
+func (a Metadata) Value() (driver.Value, error) {
+	return json.Marshal(a)
+}
+
+// Scan Unmarshal
+func (a *Metadata) Scan(value interface{}) error {
+	b, ok := value.([]byte)
+	if !ok {
+		return errors.New("type assertion to []byte failed")
+	}
+	return json.Unmarshal(b, &a)
 }
