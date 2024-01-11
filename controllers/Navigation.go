@@ -7,46 +7,36 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"github.com/zohari-tech/flowsim/models"
+	"github.com/zohari-tech/flowsim/services"
 	"github.com/zohari-tech/flowsim/utils"
 )
 
-// func GetMenu(shortcode string) (menu Menu) {
+func NavigateUSSD(ctx *gin.Context) {
 
-// 	ls := &ListScreen{
-// 		CoreScreen: CoreScreen{
-// 			Header: "Please select youre bank selection",
-// 			Name:   "HomePage",
-// 		},
-// 		NextLocation: 1,
-// 		Options:      []string{"KCB", "NCBA", "COOP"},
-// 	}
-// 	rs := &RouteScreen{
-// 		CoreScreen: CoreScreen{
-// 			Name:   "RoutedPage",
-// 			Header: "Show routed selection",
-// 		},
-// 		Routes: []Route{{Value: "Selected", NextLocation: 2}},
-// 	}
-// 	rsi := &RawInputScreen{
-// 		CoreScreen: CoreScreen{
-// 			Header: "Please enter your name",
-// 			Name:   "RawInputTest",
-// 		},
-// 		NextLocation: 3,
-// 	}
+	dial := struct {
+		PhoneNumber string `form:"phoneNumber"`
+		SessionID   string `form:"sessionId"`
+		Content     string `form:"text"`
+		ServiceCode string `form:"serviceCode"`
+	}{}
 
-// 	es := &ExternalScreen{
-// 		CoreScreen: CoreScreen{
-// 			Header: "Please enter your name",
-// 			Name:   "RawInputTest",
-// 		},
-// 	}
+	if err := ctx.ShouldBind(&dial); err != nil {
+		return
+	}
+	msg := models.Message{
+		Source:         dial.PhoneNumber,
+		ConversationID: dial.SessionID,
+		Destination:    dial.ServiceCode,
+		Direction:      utils.INBOX,
+		Content:        dial.Content,
+	}
 
-// 	es.SetDisplay("1.YTUTY0\n2.KJ8789")
-// 	es.SetLocation(-1, []Route{{Value: "Account number", NextLocation: 4}})
-// 	menu = append(menu, ls, rs, rsi, es)
-// 	return
-// }
+	content := services.Navigate(&msg)
+
+	ctx.HTML(http.StatusOK, "ussd.hml", gin.H{"message": content})
+
+}
 
 func GetAvailableScreenTypes(ctx *gin.Context) {
 
