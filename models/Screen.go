@@ -10,8 +10,8 @@ import (
 type Metadata map[string]interface{}
 
 type AuditInfo struct {
-	CreatedAt time.Time `json:"created_at" gorm:"column:created_at"`
-	UpdatedAt time.Time `json:"updated_at" gorm:"column:updated_at"`
+	CreatedAt time.Time `json:"created_at" gorm:"column:created_at;autoCreateTime"`
+	UpdatedAt time.Time `json:"updated_at" gorm:"column:updated_at;autoUpdateTime"`
 	CreatedBy string    `json:"createdby" gorm:"column:createdby"`
 	UpdatedBy string    `json:"updatedby" gorm:"column:updatedby"`
 }
