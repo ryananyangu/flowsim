@@ -22,6 +22,7 @@ func NavigateUSSD(ctx *gin.Context) {
 		SessionID   string `form:"sessionId" binding:"required"`
 		Content     string `form:"text" binding:"-"`
 		ServiceCode string `form:"serviceCode" binding:"required"`
+		NetworkCode string `form:"networkCode" binding:"required"`
 	}{}
 
 	if err := ctx.ShouldBind(&dial); err != nil {
@@ -43,7 +44,7 @@ func NavigateUSSD(ctx *gin.Context) {
 		Content:        dial.Content,
 	}
 
-	content := services.Navigate(&msg, fmt.Sprintf("%d", *parsed.CountryCode))
+	content := services.Navigate(&msg, fmt.Sprintf("%d", *parsed.CountryCode), dial.NetworkCode)
 
 	ctx.HTML(http.StatusOK, "ussd.html", gin.H{"message": content})
 

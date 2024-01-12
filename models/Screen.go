@@ -4,6 +4,7 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -72,14 +73,12 @@ func (msg *Message) GetLastScreen() (screen Screen, start bool) {
 	return
 }
 
-func (msg *Message) GetScreen(location int, countr_code string) (screen IScreen) {
+func (msg *Message) GetScreen(location int, countr_code, networkCode string) (screen IScreen) {
 	menu := Menu{}
 	screens := []Screen{}
 	nextscreen := Screen{}
-
 	// FIXME: Handle these errors
-	// NOTE: no telco filter given that we cannot have same shortcode different telco different flows in the same country
-	_ = database.Db.Table("menus").Where("shortcode = ? AND country_code = ?", msg.Destination, countr_code).First(&menu).Error
+	_ = database.Db.Table("menus").Where("shortcode = ? AND country_code = ? AND telco = ?", msg.Destination, countr_code, networkCode).First(&menu).Error
 
 	_ = database.Db.Table("screens").Where("menu_id", menu.ID).Order("created_at ASC").Find(&screens).Error
 
@@ -108,11 +107,12 @@ func (scrn *Screen) FormatBuild() IScreen {
 
 	switch scrn.ScreenType {
 	case utils.EXTERNAL_SCREEN:
-		// FIXME: Push to external function
+		externalHandlerFunc := UssdRoutes[fmt.Sprintf("%d", scrn.ID)]
+		return externalHandlerFunc(scrn)
 	case utils.LIST_SCREEN:
 		return ListScreen{
 			CoreScreen:   core,
-			NextLocation: uint(scrn.Details["NextLocation"].(int)) ,
+			NextLocation: uint(scrn.Details["NextLocation"].(int)),
 			Options:      scrn.Details["Options"].([]string),
 		}
 	case utils.RAW_INPUT_SCREEN:
@@ -141,4 +141,13 @@ func (a *Metadata) Scan(value interface{}) error {
 		return errors.New("type assertion to []byte failed")
 	}
 	return json.Unmarshal(b, &a)
+}
+// ---------------------------------- PURELY TEST FIXME: Break this out of this package----------------------------------
+type ExternalHandlerFunc func(*Screen) IScreen
+
+func CheckAccountExists(currentScreen *Screen) (screen IScreen) {
+	return
+}
+var UssdRoutes = map[string]ExternalHandlerFunc{
+	"3": CheckAccountExists,
 }

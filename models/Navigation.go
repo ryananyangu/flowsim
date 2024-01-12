@@ -8,9 +8,9 @@ import (
 )
 
 type IScreen interface {
-	Display() string           // Display the current screen
-	NextPage(input string) int // Gets the input from user and return index of what to display next
-	ScreenType() utils.ScreenType        // type of the struct that has implemented the interface
+	Display() string              // Display the current screen
+	NextPage(input string) int    // Gets the input from user and return index of what to display next
+	ScreenType() utils.ScreenType // type of the struct that has implemented the interface
 	// previousPage(input string) int // Get Previous page
 }
 
@@ -42,13 +42,6 @@ type RouteScreen struct {
 type RawInputScreen struct {
 	CoreScreen
 	NextLocation uint
-}
-
-type ExternalScreen struct {
-	CoreScreen
-	NextLocation uint
-	Message      string
-	Routes       []Route
 }
 
 // NOTE: List screen methods
@@ -119,41 +112,3 @@ func (ris RawInputScreen) NextPage(input string) int {
 func (ris RawInputScreen) ScreenType() utils.ScreenType {
 	return utils.RAW_INPUT_SCREEN
 }
-
-// // FIXME: External screen methods
-// func (es *ExternalScreen) SetDisplay(message string) {
-// 	es.Message = message
-// }
-
-// func (es *ExternalScreen) SetLocation(location int, routes []Route) (err error) {
-// 	// NOTE: Must provide atleast routes or next location for this service
-// 	if location < 0 || len(routes) <= 0 {
-// 		err = fmt.Errorf("failed to next screen location")
-// 		return
-// 	}
-// 	es.NextLocation = uint(location)
-// 	es.Routes = routes
-// 	return
-
-// }
-// func (es *ExternalScreen) Display(lang string) string {
-// 	return fmt.Sprintf("%s\n%s", es.Header, es.Message)
-// }
-
-// func (es *ExternalScreen) NextPage(input string) int {
-// 	location, err := strconv.Atoi(input)
-// 	if err != nil {
-// 		return -1
-// 	}
-// 	if location == int(es.NextLocation) {
-// 		return int(es.NextLocation)
-// 	}
-// 	if len(es.Routes) >= location {
-// 		return int(es.Routes[location].NextLocation)
-// 	}
-// 	return -1
-// }
-
-// func (es *ExternalScreen) ScreenType() utils.ScreenType {
-// 	return utils.EXTERNAL_SCREEN
-// }
