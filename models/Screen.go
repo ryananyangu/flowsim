@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	"github.com/zohari-tech/flowsim/database"
 	"github.com/zohari-tech/flowsim/utils"
 )
@@ -89,14 +88,14 @@ func (msg *Message) GetScreen(location int, countr_code, networkCode string) (sc
 		}
 	}
 
-	screen = nextscreen.FormatBuild()
-	logrus.Info(screen)
+	screen = nextscreen.FormatBuild(msg.SessionData)
+
 	// NOTE: This is where we set the screen to be set
-	utils.CacheInstance.Set(msg.ConversationID, screen, time.Minute)
+	utils.CacheInstance.Set(msg.ConversationID, nextscreen, time.Minute)
 	return
 }
 
-func (scrn *Screen) FormatBuild() IScreen {
+func (scrn *Screen) FormatBuild(sessionData map[string]interface{}) IScreen {
 	core := CoreScreen{
 		Name:        scrn.Name,
 		Header:      scrn.Details["Header"].(string),
@@ -104,11 +103,13 @@ func (scrn *Screen) FormatBuild() IScreen {
 		BackEnabled: scrn.BackEnabled,
 		ExitEnabled: scrn.ExitEnabled,
 	}
-
 	switch scrn.ScreenType {
 	case utils.EXTERNAL_SCREEN:
+
+		// logrus.Info(scrn)
+		// FIXME: Handle when id not in routes map
 		externalHandlerFunc := UssdRoutes[fmt.Sprintf("%d", scrn.ID)]
-		return externalHandlerFunc(scrn)
+		return externalHandlerFunc(&sessionData, scrn)
 	case utils.LIST_SCREEN:
 		return ListScreen{
 			CoreScreen:   core,
@@ -142,12 +143,23 @@ func (a *Metadata) Scan(value interface{}) error {
 	}
 	return json.Unmarshal(b, &a)
 }
-// ---------------------------------- PURELY TEST FIXME: Break this out of this package----------------------------------
-type ExternalHandlerFunc func(*Screen) IScreen
 
-func CheckAccountExists(currentScreen *Screen) (screen IScreen) {
-	return
+// ---------------------------------- PURELY TEST FIXME: Break this out of this package----------------------------------
+type ExternalHandlerFunc func(*map[string]interface{}, *Screen) IScreen
+
+func CheckAccountExists(sessionData *map[string]interface{}, screen_ *Screen) (screen IScreen) {
+	return RawInputScreen{
+		CoreScreen: CoreScreen{
+			Name:        screen_.Name,
+			IsEnd:       screen_.IsEnd,
+			BackEnabled: screen_.BackEnabled,
+			Header:      "Congratualtions you have accessed external screen !!!",
+			ExitEnabled: screen_.ExitEnabled,
+		},
+		NextLocation: 0,
+	}
 }
+
 var UssdRoutes = map[string]ExternalHandlerFunc{
-	"3": CheckAccountExists,
+	"2": CheckAccountExists,
 }
