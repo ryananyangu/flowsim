@@ -42,6 +42,12 @@ func NavigateUSSD(ctx *gin.Context) {
 		Destination:    dial.ServiceCode,
 		Direction:      utils.INBOX,
 		Content:        dial.Content,
+		SessionData: models.Metadata{
+			"DialingNumber": dial.PhoneNumber,
+			"CountryCode":   fmt.Sprintf("%d", *parsed.CountryCode),
+			"SessionID":     dial.SessionID,
+			"ServiceID":     dial.ServiceCode,
+		},
 	}
 
 	content := services.Navigate(&msg, fmt.Sprintf("%d", *parsed.CountryCode), dial.NetworkCode)

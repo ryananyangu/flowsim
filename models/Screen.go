@@ -4,7 +4,6 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/zohari-tech/flowsim/database"
@@ -12,6 +11,7 @@ import (
 )
 
 type Metadata map[string]interface{}
+type ExternalHandlerFunc func(map[string]interface{}, *Screen) IScreen
 
 type AuditInfo struct {
 	CreatedAt time.Time `json:"created_at" gorm:"column:created_at;autoCreateTime"`
@@ -72,64 +72,6 @@ func (msg *Message) GetLastScreen() (screen Screen, start bool) {
 	return
 }
 
-func (msg *Message) GetScreen(location int, countr_code, networkCode string) (screen IScreen) {
-	menu := Menu{}
-	screens := []Screen{}
-	nextscreen := Screen{}
-	// FIXME: Handle these errors
-	_ = database.Db.Table("menus").Where("shortcode = ? AND country_code = ? AND telco = ?", msg.Destination, countr_code, networkCode).First(&menu).Error
-
-	_ = database.Db.Table("screens").Where("menu_id", menu.ID).Order("created_at ASC").Find(&screens).Error
-
-	for _, screen_ := range screens {
-		if location == int(screen_.Location) {
-			nextscreen = screens[location]
-			break
-		}
-	}
-
-	screen = nextscreen.FormatBuild(msg.SessionData)
-
-	// NOTE: This is where we set the screen to be set
-	utils.CacheInstance.Set(msg.ConversationID, nextscreen, time.Minute)
-	return
-}
-
-func (scrn *Screen) FormatBuild(sessionData map[string]interface{}) IScreen {
-	core := CoreScreen{
-		Name:        scrn.Name,
-		Header:      scrn.Details["Header"].(string),
-		IsEnd:       scrn.IsEnd,
-		BackEnabled: scrn.BackEnabled,
-		ExitEnabled: scrn.ExitEnabled,
-	}
-	switch scrn.ScreenType {
-	case utils.EXTERNAL_SCREEN:
-
-		// logrus.Info(scrn)
-		// FIXME: Handle when id not in routes map
-		externalHandlerFunc := UssdRoutes[fmt.Sprintf("%d", scrn.ID)]
-		return externalHandlerFunc(&sessionData, scrn)
-	case utils.LIST_SCREEN:
-		return ListScreen{
-			CoreScreen:   core,
-			NextLocation: uint(scrn.Details["NextLocation"].(int)),
-			Options:      scrn.Details["Options"].([]string),
-		}
-	case utils.RAW_INPUT_SCREEN:
-		return RawInputScreen{
-			CoreScreen:   core,
-			NextLocation: uint(scrn.Details["NextLocation"].(float64)),
-		}
-	case utils.ROUTE_SCREEN:
-		return RouteScreen{
-			CoreScreen: core,
-			Routes:     scrn.Details["Routes"].([]Route),
-		}
-	}
-	return nil
-}
-
 // Value Marshal
 func (a Metadata) Value() (driver.Value, error) {
 	return json.Marshal(a)
@@ -144,22 +86,3 @@ func (a *Metadata) Scan(value interface{}) error {
 	return json.Unmarshal(b, &a)
 }
 
-// ---------------------------------- PURELY TEST FIXME: Break this out of this package----------------------------------
-type ExternalHandlerFunc func(*map[string]interface{}, *Screen) IScreen
-
-func CheckAccountExists(sessionData *map[string]interface{}, screen_ *Screen) (screen IScreen) {
-	return RawInputScreen{
-		CoreScreen: CoreScreen{
-			Name:        screen_.Name,
-			IsEnd:       screen_.IsEnd,
-			BackEnabled: screen_.BackEnabled,
-			Header:      "Congratualtions you have accessed external screen !!!",
-			ExitEnabled: screen_.ExitEnabled,
-		},
-		NextLocation: 0,
-	}
-}
-
-var UssdRoutes = map[string]ExternalHandlerFunc{
-	"2": CheckAccountExists,
-}
